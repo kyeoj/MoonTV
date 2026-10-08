@@ -39,7 +39,9 @@ function DoubanPageClient() {
 
   // 选择器状态 - 完全独立，不依赖URL参数
   const [primarySelection, setPrimarySelection] = useState<string>(() => {
-    return type === 'movie' || type === 'tv' ? '最新' : '';
+    if (type === 'movie') return '热门';
+    if (type === 'tv') return 'tv';
+    return '';
   });
   const [secondarySelection, setSecondarySelection] = useState<string>(() => {
     if (type === 'movie') return '全部';
@@ -77,7 +79,7 @@ function DoubanPageClient() {
     if (type === 'custom' && customCategories.length > 0) {
       // 自定义分类模式：优先选择 movie，如果没有 movie 则选择 tv
       const types = Array.from(
-        new Set(customCategories.map((cat) => cat.type)),
+        new Set(customCategories.map((cat) => cat.type))
       );
       if (types.length > 0) {
         // 优先选择 movie，如果没有 movie 则选择 tv
@@ -91,7 +93,7 @@ function DoubanPageClient() {
 
         // 设置选中类型的第一个分类的 query 作为二级选择
         const firstCategory = customCategories.find(
-          (cat) => cat.type === selectedType,
+          (cat) => cat.type === selectedType
         );
         if (firstCategory) {
           setSecondarySelection(firstCategory.query);
@@ -100,10 +102,10 @@ function DoubanPageClient() {
     } else {
       // 原有逻辑
       if (type === 'movie') {
-        setPrimarySelection('最新');
+        setPrimarySelection('热门');
         setSecondarySelection('全部');
       } else if (type === 'tv') {
-        setPrimarySelection('最新');
+        setPrimarySelection('tv');
         setSecondarySelection('tv');
       } else if (type === 'show') {
         setPrimarySelection('');
@@ -131,7 +133,7 @@ function DoubanPageClient() {
       if (type === 'tv') {
         return {
           kind: 'tv' as const,
-          category: primarySelection || '最新',
+          category: primarySelection || 'tv',
           type: secondarySelection,
           pageLimit: 25,
           pageStart,
@@ -151,13 +153,13 @@ function DoubanPageClient() {
       // 电影类型
       return {
         kind: type as 'tv' | 'movie',
-        category: primarySelection || '最新',
+        category: primarySelection || '热门',
         type: secondarySelection,
         pageLimit: 25,
         pageStart,
       };
     },
-    [type, primarySelection, secondarySelection],
+    [type, primarySelection, secondarySelection]
   );
 
   // 防抖的数据加载函数
@@ -170,7 +172,7 @@ function DoubanPageClient() {
         // 自定义分类模式：根据选中的一级和二级选项获取对应的分类
         const selectedCategory = customCategories.find(
           (cat) =>
-            cat.type === primarySelection && cat.query === secondarySelection,
+            cat.type === primarySelection && cat.query === secondarySelection
         );
 
         if (selectedCategory) {
@@ -178,8 +180,8 @@ function DoubanPageClient() {
             sortOrder === 'rate_desc'
               ? 'rank'
               : sortOrder === 'default'
-                ? 'recommend'
-                : 'time';
+              ? 'recommend'
+              : 'time';
           data = await getDoubanList({
             tag: selectedCategory.query,
             type: selectedCategory.type,
@@ -263,7 +265,7 @@ function DoubanPageClient() {
             const selectedCategory = customCategories.find(
               (cat) =>
                 cat.type === primarySelection &&
-                cat.query === secondarySelection,
+                cat.query === secondarySelection
             );
 
             if (selectedCategory) {
@@ -271,8 +273,8 @@ function DoubanPageClient() {
                 sortOrder === 'rate_desc'
                   ? 'rank'
                   : sortOrder === 'default'
-                    ? 'recommend'
-                    : 'time';
+                  ? 'recommend'
+                  : 'time';
               data = await getDoubanList({
                 tag: selectedCategory.query,
                 type: selectedCategory.type,
@@ -285,7 +287,7 @@ function DoubanPageClient() {
             }
           } else {
             data = await getDoubanCategories(
-              getRequestParams(currentPage * 25),
+              getRequestParams(currentPage * 25)
             );
           }
 
@@ -331,7 +333,7 @@ function DoubanPageClient() {
           setCurrentPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
 
     observer.observe(loadingRef.current);
@@ -363,7 +365,7 @@ function DoubanPageClient() {
         // 如果是自定义分类模式，同时更新一级和二级选择器
         if (type === 'custom' && customCategories.length > 0) {
           const firstCategory = customCategories.find(
-            (cat) => cat.type === value,
+            (cat) => cat.type === value
           );
           if (firstCategory) {
             // 批量更新状态，避免多次触发数据加载
@@ -377,7 +379,7 @@ function DoubanPageClient() {
         }
       }
     },
-    [primarySelection, type, customCategories],
+    [primarySelection, type, customCategories]
   );
 
   const handleSecondaryChange = useCallback(
@@ -388,7 +390,7 @@ function DoubanPageClient() {
         setSecondarySelection(value);
       }
     },
-    [secondarySelection],
+    [secondarySelection]
   );
 
   // 排序后的展示数据
@@ -421,10 +423,10 @@ function DoubanPageClient() {
     return type === 'movie'
       ? '电影'
       : type === 'tv'
-        ? '电视剧'
-        : type === 'show'
-          ? '综艺'
-          : '自定义';
+      ? '电视剧'
+      : type === 'show'
+      ? '综艺'
+      : '自定义';
   };
 
   const getActivePath = () => {
