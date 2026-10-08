@@ -30,6 +30,7 @@ function SearchPageClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [simplifiedQuery, setSimplifiedQuery] = useState('');
 
   // 获取默认聚合设置：只读取用户本地设置，默认为 true
   const getDefaultAggregate = () => {
@@ -59,13 +60,21 @@ function SearchPageClient() {
       map.set(key, arr);
     });
     return Array.from(map.entries()).sort((a, b) => {
-      // 优先排序：标题与搜索词完全一致的排在前面
-      const aExactMatch = a[1][0].title
-        .replaceAll(' ', '')
-        .includes(searchQuery.trim().replaceAll(' ', ''));
-      const bExactMatch = b[1][0].title
-        .replaceAll(' ', '')
-        .includes(searchQuery.trim().replaceAll(' ', ''));
+      // 优先排序：标题与搜索词（或规范化简体词）匹配的排在前面
+      const qClean = searchQuery.trim().replaceAll(' ', '');
+      const sqClean = simplifiedQuery
+        ? simplifiedQuery.trim().replaceAll(' ', '')
+        : '';
+
+      const aClean = a[1][0].title.replaceAll(' ', '');
+      const bClean = b[1][0].title.replaceAll(' ', '');
+
+      const aExactMatch =
+        (qClean ? aClean.includes(qClean) : false) ||
+        (sqClean ? aClean.includes(sqClean) : false);
+      const bExactMatch =
+        (qClean ? bClean.includes(qClean) : false) ||
+        (sqClean ? bClean.includes(sqClean) : false);
 
       if (aExactMatch && !bExactMatch) return -1;
       if (!aExactMatch && bExactMatch) return 1;
@@ -90,7 +99,7 @@ function SearchPageClient() {
         }
       }
     });
-  }, [searchResults]);
+  }, [searchResults, simplifiedQuery, searchQuery]);
 
   useEffect(() => {
     // 无搜索参数时聚焦搜索框
@@ -166,6 +175,7 @@ function SearchPageClient() {
         `/api/search?q=${encodeURIComponent(query.trim())}`
       );
       const data = await response.json();
+      setSimplifiedQuery(data.simplifiedQuery || '');
       let results = data.results;
       if (
         typeof window !== 'undefined' &&
@@ -176,11 +186,14 @@ function SearchPageClient() {
           return !yellowWords.some((word: string) => typeName.includes(word));
         });
       }
+      const simpQ = data.simplifiedQuery?.trim() || '';
       setSearchResults(
         results.sort((a: SearchResult, b: SearchResult) => {
-          // 优先排序：标题与搜索词完全一致的排在前面
-          const aExactMatch = a.title === query.trim();
-          const bExactMatch = b.title === query.trim();
+          // 优先排序：标题与搜索词（或规范化简体词）完全一致的排在前面
+          const aExactMatch =
+            a.title === query.trim() || (simpQ ? a.title === simpQ : false);
+          const bExactMatch =
+            b.title === query.trim() || (simpQ ? b.title === simpQ : false);
 
           if (aExactMatch && !bExactMatch) return -1;
           if (!aExactMatch && bExactMatch) return 1;
@@ -273,9 +286,16 @@ function SearchPageClient() {
             <section className='mb-12'>
               {/* 标题 + 聚合开关 */}
               <div className='mb-8 flex items-center justify-between'>
-                <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
-                  搜索结果
-                </h2>
+                <div className='flex items-center gap-2'>
+                  <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+                    搜索结果
+                  </h2>
+                  {simplifiedQuery && (
+                    <span className='hidden sm:inline-block text-xs text-green-700 bg-green-50 border border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800/50 px-2 py-0.5 rounded-full'>
+                      已智能包含简体匹配: {simplifiedQuery}
+                    </span>
+                  )}
+                </div>
                 {/* 聚合开关 */}
                 <label className='flex items-center gap-2 cursor-pointer select-none'>
                   <span className='text-sm text-gray-700 dark:text-gray-300'>

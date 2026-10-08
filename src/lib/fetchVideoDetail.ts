@@ -1,3 +1,4 @@
+import { getNormalizedSearchQueries } from '@/lib/chinese';
 import { getAvailableApiSites } from '@/lib/config';
 import { SearchResult } from '@/lib/types';
 
@@ -27,14 +28,17 @@ export async function fetchVideoDetail({
   }
   if (fallbackTitle) {
     try {
-      const searchData = await searchFromApi(apiSite, fallbackTitle.trim());
-      const exactMatch = searchData.find(
-        (item: SearchResult) =>
-          item.source.toString() === source.toString() &&
-          item.id.toString() === id.toString()
-      );
-      if (exactMatch) {
-        return exactMatch;
+      const queries = await getNormalizedSearchQueries(fallbackTitle);
+      for (const q of queries) {
+        const searchData = await searchFromApi(apiSite, q);
+        const exactMatch = searchData.find(
+          (item: SearchResult) =>
+            item.source.toString() === source.toString() &&
+            item.id.toString() === id.toString()
+        );
+        if (exactMatch) {
+          return exactMatch;
+        }
       }
     } catch (error) {
       // do nothing

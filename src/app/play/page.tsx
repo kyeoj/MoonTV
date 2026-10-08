@@ -628,10 +628,21 @@ function PlayPageClient() {
         const data = await response.json();
 
         // 处理搜索结果，根据规则过滤
-        const results = data.results.filter(
-          (result: SearchResult) =>
-            result.title.replaceAll(' ', '').toLowerCase() ===
-              videoTitleRef.current.replaceAll(' ', '').toLowerCase() &&
+        const targetTitle = videoTitleRef.current
+          .replaceAll(' ', '')
+          .toLowerCase();
+        const targetSimpTitle = data.simplifiedQuery
+          ? data.simplifiedQuery.replaceAll(' ', '').toLowerCase()
+          : '';
+
+        const results = data.results.filter((result: SearchResult) => {
+          const itemTitle = result.title.replaceAll(' ', '').toLowerCase();
+          const titleMatches =
+            itemTitle === targetTitle ||
+            (targetSimpTitle ? itemTitle === targetSimpTitle : false);
+
+          return (
+            titleMatches &&
             (videoYearRef.current
               ? result.year.toLowerCase() === videoYearRef.current.toLowerCase()
               : true) &&
@@ -639,7 +650,8 @@ function PlayPageClient() {
               ? (searchType === 'tv' && result.episodes.length > 1) ||
                 (searchType === 'movie' && result.episodes.length === 1)
               : true)
-        );
+          );
+        });
         setAvailableSources(results);
         return results;
       } catch (err) {

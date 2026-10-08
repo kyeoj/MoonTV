@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { getNormalizedSearchQueries, toSimplified } from '@/lib/chinese';
 import { getCacheTime, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
 import { yellowWords } from '@/lib/yellow';
@@ -42,8 +43,25 @@ export async function GET(request: Request) {
       );
     }
 
-    const results = await searchFromApi(targetSite, query);
-    let result = results.filter((r) => r.title === query);
+    const queries = await getNormalizedSearchQueries(query);
+    const searchPromises = queries.map((q) => searchFromApi(targetSite, q));
+    const searchResults = await Promise.all(searchPromises);
+    const flattenedResults = searchResults.flat();
+
+    const simplifiedQuery = await toSimplified(query.trim());
+    const seen = new Set<string>();
+    let result = flattenedResults.filter((r) => {
+      const key = `${r.source}-${r.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+
+      const rTitle = r.title.trim();
+      return (
+        rTitle === query.trim() ||
+        (simplifiedQuery && rTitle === simplifiedQuery)
+      );
+    });
+
     if (!config.SiteConfig.DisableYellowFilter) {
       result = result.filter((result) => {
         const typeName = result.type_name || '';
