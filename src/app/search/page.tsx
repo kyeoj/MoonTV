@@ -47,17 +47,61 @@ function SearchPageClient() {
     return getDefaultAggregate() ? 'agg' : 'all';
   });
 
-  // 聚合后的结果（按标题和年份分组）
+  // 聚合后的结果（按标题和年份智能分组，避免同作品因单集剪辑版/全集或年份缺失产生重复卡片）
   const aggregatedResults = useMemo(() => {
     const map = new Map<string, SearchResult[]>();
     searchResults.forEach((item) => {
-      // 使用 title + year + type 作为键，year 必然存在，但依然兜底 'unknown'
-      const key = `${item.title.replaceAll(' ', '')}-${
-        item.year || 'unknown'
-      }-${item.episodes.length === 1 ? 'movie' : 'tv'}`;
-      const arr = map.get(key) || [];
-      arr.push(item);
-      map.set(key, arr);
+      // 提取纯净规范化标题
+      const cleanTitle = (item.normalized_title || item.title)
+        .replaceAll(' ', '')
+        .toLowerCase();
+      // 获取有效4位年份
+      const validYear = item.year && /^\d{4}$/.test(item.year) ? item.year : '';
+
+      // 查找是否已有同名组可合并
+      let targetKey: string | null = null;
+      const entries = Array.from(map.entries());
+      for (const [existingKey, group] of entries) {
+        const groupTitle = (group[0].normalized_title || group[0].title)
+          .replaceAll(' ', '')
+          .toLowerCase();
+        if (groupTitle === cleanTitle) {
+          const groupYear =
+            group.find((g: SearchResult) => g.year && /^\d{4}$/.test(g.year))
+              ?.year || '';
+          // 如果两边都有明确年份且相差大于1年，视为不同年代作品；否则合并为同作品
+          if (
+            !validYear ||
+            !groupYear ||
+            Math.abs(parseInt(validYear) - parseInt(groupYear)) <= 1
+          ) {
+            targetKey = existingKey;
+            break;
+          }
+        }
+      }
+
+      if (targetKey) {
+        const existing = map.get(targetKey);
+        if (existing) {
+          existing.push(item);
+        }
+      } else {
+        const key = `${cleanTitle}-${validYear || 'unknown'}`;
+        map.set(key, [item]);
+      }
+    });
+
+    // 优化各聚合组内的条目顺序：集数多的（如80集多集版）优先，有明确年份的优先
+    map.forEach((group) => {
+      group.sort((a, b) => {
+        const aLen = a.episodes?.length || 0;
+        const bLen = b.episodes?.length || 0;
+        if (aLen !== bLen) return bLen - aLen;
+        const aYear = a.year && /^\d{4}$/.test(a.year) ? 1 : 0;
+        const bYear = b.year && /^\d{4}$/.test(b.year) ? 1 : 0;
+        return bYear - aYear;
+      });
     });
     return Array.from(map.entries()).sort((a, b) => {
       // 优先排序：标题与搜索词（或规范化简体词）匹配的排在前面

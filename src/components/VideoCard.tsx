@@ -93,6 +93,9 @@ export default function VideoCard({
       first: items[0],
       mostFrequentDoubanId: getMostFrequent(countMap),
       mostFrequentEpisodes: getMostFrequent(episodeCountMap) || 0,
+      bestYear:
+        items.find((item) => item.year && /^\d{4}$/.test(item.year))?.year ||
+        items[0]?.year,
     };
   }, [isAggregate, items]);
 
@@ -104,12 +107,12 @@ export default function VideoCard({
     aggregateData?.mostFrequentDoubanId ?? douban_id
   );
   const actualEpisodes = aggregateData?.mostFrequentEpisodes ?? episodes;
-  const actualYear = aggregateData?.first.year ?? year;
+  const actualYear = aggregateData?.bestYear ?? year;
   const actualQuery = query || '';
   const actualSearchType = isAggregate
-    ? aggregateData?.first.episodes?.length === 1
-      ? 'movie'
-      : 'tv'
+    ? (actualEpisodes ?? 0) > 1
+      ? 'tv'
+      : 'movie'
     : type;
 
   // 获取收藏状态

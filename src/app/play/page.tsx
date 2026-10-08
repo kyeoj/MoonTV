@@ -643,13 +643,16 @@ function PlayPageClient() {
 
           return (
             titleMatches &&
-            (videoYearRef.current
-              ? result.year.toLowerCase() === videoYearRef.current.toLowerCase()
-              : true) &&
-            (searchType
-              ? (searchType === 'tv' && result.episodes.length > 1) ||
-                (searchType === 'movie' && result.episodes.length === 1)
-              : true)
+            (!videoYearRef.current ||
+              !result.year ||
+              result.year === '0' ||
+              result.year === 'unknown' ||
+              result.year.toLowerCase() ===
+                videoYearRef.current.toLowerCase()) &&
+            (!searchType ||
+              (searchType === 'tv' && result.episodes.length > 1) ||
+              (searchType === 'movie' && result.episodes.length <= 1) ||
+              Boolean(result.type_name && result.type_name.includes('短剧')))
           );
         });
         setAvailableSources(results);

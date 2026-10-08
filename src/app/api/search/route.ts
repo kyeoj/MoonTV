@@ -46,6 +46,13 @@ export async function GET(request: Request) {
       return true;
     });
 
+    // 为每个结果填充简体规范化标题，供前端聚合去重和排序使用
+    await Promise.all(
+      flattenedResults.map(async (result) => {
+        result.normalized_title = await toSimplified(result.title);
+      })
+    );
+
     if (!config.SiteConfig.DisableYellowFilter) {
       flattenedResults = flattenedResults.filter((result) => {
         const typeName = result.type_name || '';
