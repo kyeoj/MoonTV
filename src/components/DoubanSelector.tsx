@@ -43,14 +43,22 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
   const moviePrimaryOptions: SelectorOption[] = [
     { label: '热门电影', value: '热门' },
     { label: '最新电影', value: '最新' },
+    { label: '经典电影', value: '经典' },
     { label: '豆瓣高分', value: '豆瓣高分' },
     { label: '冷门佳片', value: '冷门佳片' },
   ];
 
   // 电视剧的一级选择器选项
   const tvPrimaryOptions: SelectorOption[] = [
-    { label: '热门剧集', value: 'tv' },
-    { label: '最新剧集', value: '最新' },
+    { label: '全部剧集', value: '热门' },
+    { label: '国产剧', value: '国产剧' },
+    { label: '欧美剧', value: '美剧' },
+    { label: '韩剧', value: '韩剧' },
+    { label: '日剧', value: '日剧' },
+    { label: '港剧', value: '港剧' },
+    { label: '英剧', value: '英剧' },
+    { label: '动漫', value: '日本动画' },
+    { label: '纪录片', value: '纪录片' },
   ];
 
   // 电影的二级选择器选项
@@ -60,25 +68,16 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
     { label: '欧美', value: '欧美' },
     { label: '韩国', value: '韩国' },
     { label: '日本', value: '日本' },
-  ];
-
-  // 电视剧选择器选项
-  const tvOptions: SelectorOption[] = [
-    { label: '全部', value: 'tv' },
-    { label: '国产', value: 'tv_domestic' },
-    { label: '欧美', value: 'tv_american' },
-    { label: '日本', value: 'tv_japanese' },
-    { label: '韩国', value: 'tv_korean' },
-    { label: '动漫', value: 'tv_animation' },
-    { label: '纪录片', value: 'tv_documentary' },
+    { label: '动作', value: '动作' },
+    { label: '喜剧', value: '喜剧' },
+    { label: '爱情', value: '爱情' },
+    { label: '科幻', value: '科幻' },
+    { label: '悬疑', value: '悬疑' },
+    { label: '动画', value: '动画' },
   ];
 
   // 综艺选择器选项
-  const showOptions: SelectorOption[] = [
-    { label: '全部', value: 'show' },
-    { label: '国内', value: 'show_domestic' },
-    { label: '国外', value: 'show_foreign' },
-  ];
+  const showOptions: SelectorOption[] = [{ label: '全部综艺', value: '综艺' }];
 
   // 更新指示器位置的通用函数
   const updateIndicatorPosition = (
@@ -137,6 +136,16 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
         primaryButtonRefs,
         setPrimaryIndicatorStyle
       );
+    } else if (type === 'show') {
+      const activeIndex = showOptions.findIndex(
+        (opt) => opt.value === (primarySelection || showOptions[0].value)
+      );
+      updateIndicatorPosition(
+        activeIndex,
+        primaryContainerRef,
+        primaryButtonRefs,
+        setPrimaryIndicatorStyle
+      );
     }
 
     // 副选择器初始位置
@@ -145,14 +154,6 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
       secondaryActiveIndex = movieSecondaryOptions.findIndex(
         (opt) =>
           opt.value === (secondarySelection || movieSecondaryOptions[0].value)
-      );
-    } else if (type === 'tv') {
-      secondaryActiveIndex = tvOptions.findIndex(
-        (opt) => opt.value === (secondarySelection || tvOptions[0].value)
-      );
-    } else if (type === 'show') {
-      secondaryActiveIndex = showOptions.findIndex(
-        (opt) => opt.value === (secondarySelection || showOptions[0].value)
       );
     }
 
@@ -177,6 +178,10 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
       activeIndex = tvPrimaryOptions.findIndex(
         (opt) => opt.value === primarySelection
       );
+    } else if (type === 'show') {
+      activeIndex = showOptions.findIndex(
+        (opt) => opt.value === primarySelection
+      );
     }
     if (activeIndex >= 0) {
       const cleanup = updateIndicatorPosition(
@@ -192,35 +197,21 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
   // 监听副选择器变化
   useEffect(() => {
     let activeIndex = -1;
-    let options: SelectorOption[] = [];
-
     if (type === 'movie') {
       activeIndex = movieSecondaryOptions.findIndex(
         (opt) => opt.value === secondarySelection
       );
-      options = movieSecondaryOptions;
-    } else if (type === 'tv') {
-      activeIndex = tvOptions.findIndex(
-        (opt) => opt.value === secondarySelection
-      );
-      options = tvOptions;
-    } else if (type === 'show') {
-      activeIndex = showOptions.findIndex(
-        (opt) => opt.value === secondarySelection
-      );
-      options = showOptions;
+      if (activeIndex >= 0) {
+        const cleanup = updateIndicatorPosition(
+          activeIndex,
+          secondaryContainerRef,
+          secondaryButtonRefs,
+          setSecondaryIndicatorStyle
+        );
+        return cleanup;
+      }
     }
-
-    if (options.length > 0) {
-      const cleanup = updateIndicatorPosition(
-        activeIndex,
-        secondaryContainerRef,
-        secondaryButtonRefs,
-        setSecondaryIndicatorStyle
-      );
-      return cleanup;
-    }
-  }, [secondarySelection]);
+  }, [secondarySelection, type]);
 
   // 渲染胶囊式选择器
   const renderCapsuleSelector = (
@@ -299,7 +290,7 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
           {/* 二级选择器 */}
           <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
             <span className='text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 min-w-[48px]'>
-              地区
+              类型
             </span>
             <div className='overflow-x-auto'>
               {renderCapsuleSelector(
@@ -313,37 +304,19 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
         </div>
       )}
 
-      {/* 电视剧类型 - 显示两级选择器 */}
+      {/* 电视剧类型 - 显示一级分类选择器 */}
       {type === 'tv' && (
-        <div className='space-y-3 sm:space-y-4'>
-          {/* 一级选择器 */}
-          <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
-            <span className='text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 min-w-[48px]'>
-              分类
-            </span>
-            <div className='overflow-x-auto'>
-              {renderCapsuleSelector(
-                tvPrimaryOptions,
-                primarySelection || tvPrimaryOptions[0].value,
-                onPrimaryChange,
-                true
-              )}
-            </div>
-          </div>
-
-          {/* 二级选择器 */}
-          <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
-            <span className='text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 min-w-[48px]'>
-              类型
-            </span>
-            <div className='overflow-x-auto'>
-              {renderCapsuleSelector(
-                tvOptions,
-                secondarySelection || tvOptions[0].value,
-                onSecondaryChange,
-                false
-              )}
-            </div>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
+          <span className='text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 min-w-[48px]'>
+            分类
+          </span>
+          <div className='overflow-x-auto'>
+            {renderCapsuleSelector(
+              tvPrimaryOptions,
+              primarySelection || tvPrimaryOptions[0].value,
+              onPrimaryChange,
+              true
+            )}
           </div>
         </div>
       )}
@@ -357,9 +330,9 @@ const DoubanSelector: React.FC<DoubanSelectorProps> = ({
           <div className='overflow-x-auto'>
             {renderCapsuleSelector(
               showOptions,
-              secondarySelection || showOptions[0].value,
-              onSecondaryChange,
-              false
+              primarySelection || showOptions[0].value,
+              onPrimaryChange,
+              true
             )}
           </div>
         </div>
