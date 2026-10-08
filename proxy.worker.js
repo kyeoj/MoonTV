@@ -6,6 +6,19 @@ addEventListener('fetch', (event) => {
 
 async function handleRequest(request) {
   try {
+    // 处理 CORS 预检请求 (OPTIONS)
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
     const url = new URL(request.url);
 
     // 如果访问根目录，返回HTML
